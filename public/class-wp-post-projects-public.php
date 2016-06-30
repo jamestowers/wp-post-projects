@@ -51,6 +51,7 @@ class Wp_Post_Projects_Public {
 
 		$this->plugin_name = $plugin_name;
 		$this->version = $version;
+		$this->add_shortcodes();
 
 	}
 
@@ -98,6 +99,79 @@ class Wp_Post_Projects_Public {
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-post-projects-public.js', array( 'jquery' ), $this->version, false );
 
+	}
+
+
+	public function get_project_posts($project_id)
+	{
+	  
+	  $args = array(
+	    'post_type' => 'post',
+	    'meta_query' => array(
+	      array(
+	        'key' => $this->plugin_name . '_project',
+	        'value' => $project_id,
+	        'compare' => 'LIKE'
+	      )
+	    ),
+	    'post__not_in' => get_option( 'sticky_posts' )
+	  );
+	  $query = new WP_Query($args);
+	  return $query;
+	}
+
+	public function sort_project_posts_by_format()
+	{
+		$query = $this->get_project_posts($project_id);
+
+		$sorted_posts = array();
+
+		if ($query->have_posts()) : while ($query->have_posts()) : $query->the_post();
+			
+			$post_format = get_post_format($post->ID);
+			
+			if(!isset($sorted_posts[$post_format])){
+				$sorted_posts[$post_format] = array();
+			}
+
+			$p = array(
+				'title' => get_the_title(),
+				'format' => $post_format,
+				'content' => get_the_content()
+			);
+			
+			array_push($sorted_posts[$post_format], $p);
+
+		endwhile; endif; wp_reset_query();
+		
+		return $sorted_posts;
+	}
+
+	
+
+	public function render_project_posts($project_id)
+	{
+	  $posts = $this->sort_project_posts_by_format($project_id);
+	  foreach($posts as $format => $posts){
+	  	echo '<h2>' . $format . '</h2>';
+	  	echo '<ul>';
+	  	foreach($posts as $post){
+	  		echo '<li>' . $post['title'] . '</li>';
+	  	}
+	  	echo '</ul>';
+	  }
+	}
+
+	/**
+	 * Enable shortcode
+	 *
+	 * Adds the [gfd_form] shortcode for displaying the submission form on a page
+	 *
+	 * @since    1.0.0
+	 */
+	public function add_shortcodes()
+	{
+		add_shortcode('project_posts', array( &$this, 'render_project_posts'));
 	}
 
 }

@@ -112,6 +112,7 @@ class Wp_Post_Projects {
 		 * The class responsible for defining all actions that occur in the admin area.
 		 */
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-wp-post-projects-admin.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-wp-post-projects-meta-boxes.php';
 
 		/**
 		 * The class responsible for defining all actions that occur in the public-facing
@@ -149,10 +150,19 @@ class Wp_Post_Projects {
 	 */
 	private function define_admin_hooks() {
 
+		$plugin_meta_boxes = new Wp_Post_Projects_Meta_Boxes( $this->get_plugin_name(), $this->get_version() );
+
 		$plugin_admin = new Wp_Post_Projects_Admin( $this->get_plugin_name(), $this->get_version() );
 
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
-		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		//$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
+		//$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		$this->loader->add_action( 'init', $plugin_admin, 'create_project_post_type' );
+		$this->loader->add_filter( 'manage_post_posts_columns', $plugin_admin, 'set_post_columns' );
+		$this->loader->add_action( 'manage_posts_custom_column', $plugin_admin, 'populate_custom_columns', 10, 2 );
+
+		/* Fire the project meta box setup function on the post editor screen. */
+		$this->loader->add_action( 'load-post.php', $plugin_meta_boxes, 'post_meta_boxes_setup' );
+		$this->loader->add_action( 'load-post-new.php', $plugin_meta_boxes, 'post_meta_boxes_setup' );
 
 	}
 
@@ -167,8 +177,8 @@ class Wp_Post_Projects {
 
 		$plugin_public = new Wp_Post_Projects_Public( $this->get_plugin_name(), $this->get_version() );
 
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
-		$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+		//$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
+		//$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
 
 	}
 

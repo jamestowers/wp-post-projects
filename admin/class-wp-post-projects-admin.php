@@ -100,4 +100,66 @@ class Wp_Post_Projects_Admin {
 
 	}
 
+
+	/**
+	 * Create Project custom post type
+	 */
+	public function create_project_post_type() {
+	  register_post_type( 'project',
+	    array(
+	      'labels' => array(
+	        'name' => __( 'Projects' ),
+	        'singular_name' => __( 'Project' )
+	      ),
+	      'public' => true,
+	      'has_archive' => true,
+	      'menu_icon' => 'dashicons-category',
+	    )
+	  );
+	}
+
+
+
+
+
+
+
+
+
+
+
+	/**
+	 * Add project and content type columns to post write panel
+	 * @param see: https://codex.wordpress.org/Plugin_API/Action_Reference/manage_posts_custom_column
+	 */
+	function set_post_columns($columns) {
+	    return array(
+	        'cb' => '<input type="checkbox" />',
+	        'title' => __('Title'),
+	        'project' => __('Project'),
+	        'post_format' =>__( 'Post Format'),
+	        'tags' =>__( 'Tags'),
+	        'date' => __('Date')
+	    );
+	}
+
+	/**
+	 * Populate project and content type custom columns
+	 * @param see: https://codex.wordpress.org/Plugin_API/Action_Reference/manage_posts_custom_column
+	 */
+	public function populate_custom_columns( $column, $post_id ) {
+	  switch ( $column ) {
+	    case 'project':
+	      $project_id = get_post_meta( $post_id, $this->plugin_name . '_project', true );
+	      if ( $project_id ) {
+	        echo '<a href="' . get_edit_post_link($project_id) . '">' . get_the_title($project_id) . '</a>';
+	      }
+	      break;
+
+	    case 'post_format':
+	      echo get_post_format( $post_id ); 
+	      break;
+	  }
+	}
+
 }
