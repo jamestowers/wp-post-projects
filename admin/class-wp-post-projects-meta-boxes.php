@@ -54,6 +54,7 @@ class Wp_Post_Projects_Meta_Boxes {
   {
     /* Add meta boxes on the 'add_meta_boxes' hook. */
     add_action( 'add_meta_boxes', array( &$this, 'add_project_meta_boxes') );
+    add_action( 'add_meta_boxes', array( &$this, 'add_post_content_type_meta_boxes') );
     /* Save post meta on the 'save_post' hook. */
     add_action( 'save_post', array( &$this, 'save_post_project'), 10, 2 );
   }
@@ -63,15 +64,37 @@ class Wp_Post_Projects_Meta_Boxes {
     add_meta_box(
       $this->plugin_name . '_project_meta_box',      // Unique ID
       esc_html__( 'Project', $this->plugin_name ),    // Title
-      array( &$this, 'project_info_meta_box'),   // Callback function
+      array( &$this, 'render_project_info_meta_box'),   // Callback function
       'post',         // Admin page (or post type)
       'side',         // Context
       'default'       // Priority
     );
   }
 
+
+  // remove default content_type taxonomy meta box 
+  // so that we can add our oen in its place
+  public function remove_default_post_content_type_meta_box()
+  {
+    remove_meta_box('content_typediv', 'post', 'side');
+  }
+
+  // Add our own...
+  public function add_post_content_type_meta_boxes()
+  {
+    
+    add_meta_box( 
+      $this->plugin_name . '_content_type_meta_box', 
+      esc_html__( 'Content Type', $this->plugin_name ), 
+      array( &$this, 'render_content_type_metabox'),
+      'post',
+      'side',
+      'core'
+    );
+  }
+
   /* Display the post meta box. */
-  public function project_info_meta_box( $object, $box ) { 
+  public function render_project_info_meta_box( $object, $box ) { 
 
       // Save meta key name for later use
       $meta_key = $this->plugin_name . '_project';
@@ -96,6 +119,39 @@ class Wp_Post_Projects_Meta_Boxes {
   <?php }
 
 
+  public function render_content_type_metabox( $post, $box )
+  {
+    //Get taxonomy and terms
+    $taxonomy = 'content_type';
+ 
+    //Set up the taxonomy object and get terms
+    $tax = get_taxonomy($taxonomy);
+    $terms = get_terms($taxonomy,array('hide_empty' => 0));
+ 
+    //Name of the form
+    $name = 'tax_input[' . $taxonomy . ']';
+ 
+    //Get current and popular terms
+    //$popular = get_terms( $taxonomy, array( 'orderby' => 'count', 'order' => 'DESC', 'number' => 10, 'hierarchical' => false ) );
+    $postterms = get_the_terms( $post->ID,$taxonomy );
+    $current = ($postterms ? array_pop($postterms) : false);
+    $current = ($current ? $current->term_id : 0);
+    ?>
+ 
+    <div id="taxonomy-<?php echo $taxonomy; ?>" class="categorydiv">
+      <ul id="<?php echo $taxonomy; ?>checklist" class="list:<?php echo $taxonomy?> categorychecklist form-no-clear">
+          <?php   foreach($terms as $term){
+              $id = $taxonomy.'-'.$term->term_id;
+              echo "<li id='$id'><label class='selectit'>";
+              echo "<input type='radio' id='in-$id' name='{$name}'".checked($current,$term->term_id,false)."value='$term->term_id' />$term->name<br />";
+             echo "</label></li>";
+          }?>
+      </ul>
+    </div>
+    <?php
+  }
+
+
 
   public function save_post_project( $post_id, $post )
   {
@@ -106,7 +162,7 @@ class Wp_Post_Projects_Meta_Boxes {
 
   public function save_meta($post_id, $post, $meta_key)
   {
-    $this->verify_nonce($meta_key . '_nonce');
+    $this->verify_nonce($meta_key . '_nonce', $post_id);
 
     /* Get the post type object. */
     $post_type = get_post_type_object( $post->post_type );
@@ -122,7 +178,7 @@ class Wp_Post_Projects_Meta_Boxes {
 
 
 
-  public function verify_nonce($nonce_key)
+  public function verify_nonce($nonce_key, $post_id)
   {
     if ( !isset( $_POST[$nonce_key] ) || !wp_verify_nonce( $_POST[$nonce_key], basename( __FILE__ ) ) )
       return $post_id;

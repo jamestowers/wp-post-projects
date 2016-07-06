@@ -1,71 +1,13 @@
 <?php
 
-/**
- * The file that defines the core plugin class
- *
- * A class definition that includes attributes and functions used across both the
- * public-facing side of the site and the admin area.
- *
- * @link       http://dropshop.io
- * @since      1.0.0
- *
- * @package    Wp_Post_Projects
- * @subpackage Wp_Post_Projects/includes
- */
-
-/**
- * The core plugin class.
- *
- * This is used to define internationalization, admin-specific hooks, and
- * public-facing site hooks.
- *
- * Also maintains the unique identifier of this plugin as well as the current
- * version of the plugin.
- *
- * @since      1.0.0
- * @package    Wp_Post_Projects
- * @subpackage Wp_Post_Projects/includes
- * @author     James Towers <james@songdrop.com>
- */
 class Wp_Post_Projects {
 
-	/**
-	 * The loader that's responsible for maintaining and registering all hooks that power
-	 * the plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   protected
-	 * @var      Wp_Post_Projects_Loader    $loader    Maintains and registers all hooks for the plugin.
-	 */
 	protected $loader;
 
-	/**
-	 * The unique identifier of this plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   protected
-	 * @var      string    $plugin_name    The string used to uniquely identify this plugin.
-	 */
 	protected $plugin_name;
 
-	/**
-	 * The current version of the plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   protected
-	 * @var      string    $version    The current version of the plugin.
-	 */
 	protected $version;
 
-	/**
-	 * Define the core functionality of the plugin.
-	 *
-	 * Set the plugin name and the plugin version that can be used throughout the plugin.
-	 * Load the dependencies, define the locale, and set the hooks for the admin area and
-	 * the public-facing side of the site.
-	 *
-	 * @since    1.0.0
-	 */
 	public function __construct() {
 
 		$this->plugin_name = 'wp-post-projects';
@@ -78,22 +20,6 @@ class Wp_Post_Projects {
 
 	}
 
-	/**
-	 * Load the required dependencies for this plugin.
-	 *
-	 * Include the following files that make up the plugin:
-	 *
-	 * - Wp_Post_Projects_Loader. Orchestrates the hooks of the plugin.
-	 * - Wp_Post_Projects_i18n. Defines internationalization functionality.
-	 * - Wp_Post_Projects_Admin. Defines all hooks for the admin area.
-	 * - Wp_Post_Projects_Public. Defines all hooks for the public side of the site.
-	 *
-	 * Create an instance of the loader which will be used to register the hooks
-	 * with WordPress.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 */
 	private function load_dependencies() {
 
 		/**
@@ -150,17 +76,23 @@ class Wp_Post_Projects {
 	 */
 	private function define_admin_hooks() {
 
-		$plugin_meta_boxes = new Wp_Post_Projects_Meta_Boxes( $this->get_plugin_name(), $this->get_version() );
-
 		$plugin_admin = new Wp_Post_Projects_Admin( $this->get_plugin_name(), $this->get_version() );
 
-		//$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
-		//$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		$plugin_meta_boxes = new Wp_Post_Projects_Meta_Boxes( $this->get_plugin_name(), $this->get_version() );
+
 		$this->loader->add_action( 'init', $plugin_admin, 'create_project_post_type' );
+		$this->loader->add_action( 'init', $plugin_admin, 'create_content_type_taxonomy' );
 		$this->loader->add_filter( 'manage_post_posts_columns', $plugin_admin, 'set_post_columns' );
+		//$this->loader->add_filter( 'post_type_link', $plugin_admin, 'project_permalinks', 1, 2 );
 		$this->loader->add_action( 'manage_posts_custom_column', $plugin_admin, 'populate_custom_columns', 10, 2 );
+		$this->loader->add_action( 'save_post', $plugin_admin, 'set_post_content_type' );
+		$this->loader->add_action( 'save_post', $plugin_admin, 'set_project_dates' );
+
 
 		/* Fire the project meta box setup function on the post editor screen. */
+		//-- Remove default content type meta box
+		$this->loader->add_action( 'admin_menu', $plugin_meta_boxes, 'remove_default_post_content_type_meta_box' );
+		//-- add new ones
 		$this->loader->add_action( 'load-post.php', $plugin_meta_boxes, 'post_meta_boxes_setup' );
 		$this->loader->add_action( 'load-post-new.php', $plugin_meta_boxes, 'post_meta_boxes_setup' );
 
@@ -177,8 +109,7 @@ class Wp_Post_Projects {
 
 		$plugin_public = new Wp_Post_Projects_Public( $this->get_plugin_name(), $this->get_version() );
 
-		//$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
-		//$this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
+		$this->loader->add_action( 'pre_get_posts', $plugin_public, 'filter_project_taxonomy_archive' );
 
 	}
 

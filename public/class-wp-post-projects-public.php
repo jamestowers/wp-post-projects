@@ -1,55 +1,13 @@
 <?php
 
-/**
- * The public-facing functionality of the plugin.
- *
- * @link       http://dropshop.io
- * @since      1.0.0
- *
- * @package    Wp_Post_Projects
- * @subpackage Wp_Post_Projects/public
- */
-
-/**
- * The public-facing functionality of the plugin.
- *
- * Defines the plugin name, version, and two examples hooks for how to
- * enqueue the admin-specific stylesheet and JavaScript.
- *
- * @package    Wp_Post_Projects
- * @subpackage Wp_Post_Projects/public
- * @author     James Towers <james@songdrop.com>
- */
 class Wp_Post_Projects_Public {
 
-	/**
-	 * The ID of this plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 * @var      string    $plugin_name    The ID of this plugin.
-	 */
-	private $plugin_name;
-
-	/**
-	 * The version of this plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 * @var      string    $version    The current version of this plugin.
-	 */
+	private static $plugin_name;
 	private $version;
 
-	/**
-	 * Initialize the class and set its properties.
-	 *
-	 * @since    1.0.0
-	 * @param      string    $plugin_name       The name of the plugin.
-	 * @param      string    $version    The version of this plugin.
-	 */
 	public function __construct( $plugin_name, $version ) {
 
-		$this->plugin_name = $plugin_name;
+		self::$plugin_name = $plugin_name;
 		$this->version = $version;
 		$this->add_shortcodes();
 
@@ -57,61 +15,34 @@ class Wp_Post_Projects_Public {
 
 	/**
 	 * Register the stylesheets for the public-facing side of the site.
-	 *
-	 * @since    1.0.0
 	 */
 	public function enqueue_styles() {
 
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Wp_Post_Projects_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Wp_Post_Projects_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
-		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-post-projects-public.css', array(), $this->version, 'all' );
+		wp_enqueue_style( self::$plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-post-projects-public.css', array(), $this->version, 'all' );
 
 	}
 
 	/**
 	 * Register the JavaScript for the public-facing side of the site.
-	 *
-	 * @since    1.0.0
 	 */
 	public function enqueue_scripts() {
 
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Wp_Post_Projects_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Wp_Post_Projects_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
-
-		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-post-projects-public.js', array( 'jquery' ), $this->version, false );
+		wp_enqueue_script( self::$plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-post-projects-public.js', array( 'jquery' ), $this->version, false );
 
 	}
 
 
-	public function get_project_posts($project_id)
+	public static function get_project_posts($project_id)
 	{
-	  
 	  $args = array(
 	    'post_type' => 'post',
 	    'meta_query' => array(
 	      array(
-	        'key' => $this->plugin_name . '_project',
+	        'key' => self::$plugin_name . '_project',
 	        'value' => $project_id,
-	        'compare' => 'LIKE'
+	        'compare' => 'LIKE',
+	        'orderby' => 'date',
+	        'order' => 'DESC'
 	      )
 	    ),
 	    'post__not_in' => get_option( 'sticky_posts' )
@@ -120,58 +51,126 @@ class Wp_Post_Projects_Public {
 	  return $query;
 	}
 
-	public function sort_project_posts_by_format()
+
+
+	public static function sort_project_posts_by_content_type($project_id)
 	{
-		$query = $this->get_project_posts($project_id);
+		
+		$query = self::get_project_posts($project_id);
 
 		$sorted_posts = array();
 
 		if ($query->have_posts()) : while ($query->have_posts()) : $query->the_post();
 			
-			$post_format = get_post_format($post->ID);
-			
-			if(!isset($sorted_posts[$post_format])){
-				$sorted_posts[$post_format] = array();
+			$content_type = wp_get_post_terms( $query->post->ID, 'content_type' );
+
+			// Skip if this post doesnt have a content type
+			if(!empty($content_type)){
+
+				// Only one content type is allowed per post so just get the first one
+				$content_type = $content_type[0]; 
+				
+				// If this project has post of this content type
+				if( $content_type->count > 0 ){
+
+					if(!isset($sorted_posts[$content_type->slug])){
+						$sorted_posts[$content_type->slug] = array();
+					}
+
+					$thumb_url = has_post_thumbnail() ? get_the_post_thumbnail( $query->post->ID, 'post-thumbnail' ) : '';
+					
+					$p = array(
+						'title' => get_the_title(),
+						'content_type' => $content_type->name,
+						'content' => get_the_content(),
+						'thumbnail' => $thumb_url
+					);
+					
+					array_push($sorted_posts[$content_type->slug], $p);
+				}
+
 			}
 
-			$p = array(
-				'title' => get_the_title(),
-				'format' => $post_format,
-				'content' => get_the_content()
-			);
-			
-			array_push($sorted_posts[$post_format], $p);
-
-		endwhile; endif; wp_reset_query();
+		endwhile; endif; 
+		wp_reset_query();
 		
 		return $sorted_posts;
 	}
 
+
+	public static function get_project_date_range($project_id)
+	{
+		return get_post_meta($project_id, 'wp-post-projects_start_date', true) . ' - ' . get_post_meta($project_id, 'wp-post-projects_end_date', true);
+	}
 	
 
-	public function render_project_posts($project_id)
+	/*public function render_project_posts($project_id)
 	{
-	  $posts = $this->sort_project_posts_by_format($project_id);
-	  foreach($posts as $format => $posts){
-	  	echo '<h2>' . $format . '</h2>';
-	  	echo '<ul>';
-	  	foreach($posts as $post){
-	  		echo '<li>' . $post['title'] . '</li>';
-	  	}
-	  	echo '</ul>';
+		if(null == $project_id){
+			global $post;
+			$project_id = $post->ID;
+		}
+
+	  $posts = $this->sort_project_posts_by_content_type($project_id);
+
+	  foreach($posts as $content_type => $posts){
+	  	if(!empty($posts)){
+	  		$post = $posts[0];
+	  		$link = add_query_arg( 'project_id', $project_id, get_term_link($content_type, 'content_type'));
+	  		?>
+
+	  		<a href="<?php echo esc_attr($link);?>" class="tile post-content-type post-content-type-<?php echo $content_type;?>">
+	  			<figure class="thumbnail">
+	  				<?php echo $post['thumbnail'];?>
+	  			</figure>
+	  			<h3><?php  echo $post['content_type'];?></h3>
+	  		</a>
+
+	  	<?php }
 	  }
+	}*/
+
+
+	public function filter_project_taxonomy_archive ( $query ) {
+
+	  if ( $query->is_main_query() && is_tax('projects') )
+
+	    $query->set( 'post_type', 'post' );
+
+	    if(isset($_GET['project_id'])){
+
+	      $query->set( 'meta_query', array(
+	        array(
+	          'key' => 'wp-post-projects_project',
+	          'value' => $_REQUEST['project_id'],
+	          'compare' => '=',
+	          'type' => 'numeric'
+	          )
+	        )
+	      );
+
+	    }
 	}
+
 
 	/**
 	 * Enable shortcode
-	 *
 	 * Adds the [gfd_form] shortcode for displaying the submission form on a page
-	 *
-	 * @since    1.0.0
 	 */
 	public function add_shortcodes()
 	{
-		add_shortcode('project_posts', array( &$this, 'render_project_posts'));
+		//add_shortcode('project_posts', array( &$this, 'render_project_posts'));
+		//add_shortcode('project_posts_by_format', array( &$this, 'sort_project_posts_by_content_type'));
 	}
 
+}
+
+function project_date_range($project_id = null)
+{
+	if(null == $project_id){
+		global $post;
+		$project_id = $post->ID;
+	}
+
+	echo Wp_Post_Projects_Public::get_project_date_range($project_id);
 }

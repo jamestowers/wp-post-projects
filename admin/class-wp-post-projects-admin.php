@@ -1,52 +1,10 @@
 <?php
 
-/**
- * The admin-specific functionality of the plugin.
- *
- * @link       http://dropshop.io
- * @since      1.0.0
- *
- * @package    Wp_Post_Projects
- * @subpackage Wp_Post_Projects/admin
- */
-
-/**
- * The admin-specific functionality of the plugin.
- *
- * Defines the plugin name, version, and two examples hooks for how to
- * enqueue the admin-specific stylesheet and JavaScript.
- *
- * @package    Wp_Post_Projects
- * @subpackage Wp_Post_Projects/admin
- * @author     James Towers <james@songdrop.com>
- */
 class Wp_Post_Projects_Admin {
 
-	/**
-	 * The ID of this plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 * @var      string    $plugin_name    The ID of this plugin.
-	 */
 	private $plugin_name;
-
-	/**
-	 * The version of this plugin.
-	 *
-	 * @since    1.0.0
-	 * @access   private
-	 * @var      string    $version    The current version of this plugin.
-	 */
 	private $version;
 
-	/**
-	 * Initialize the class and set its properties.
-	 *
-	 * @since    1.0.0
-	 * @param      string    $plugin_name       The name of this plugin.
-	 * @param      string    $version    The version of this plugin.
-	 */
 	public function __construct( $plugin_name, $version ) {
 
 		$this->plugin_name = $plugin_name;
@@ -54,47 +12,13 @@ class Wp_Post_Projects_Admin {
 
 	}
 
-	/**
-	 * Register the stylesheets for the admin area.
-	 *
-	 * @since    1.0.0
-	 */
 	public function enqueue_styles() {
-
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Wp_Post_Projects_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Wp_Post_Projects_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
 
 		wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-post-projects-admin.css', array(), $this->version, 'all' );
 
 	}
 
-	/**
-	 * Register the JavaScript for the admin area.
-	 *
-	 * @since    1.0.0
-	 */
 	public function enqueue_scripts() {
-
-		/**
-		 * This function is provided for demonstration purposes only.
-		 *
-		 * An instance of this class should be passed to the run() function
-		 * defined in Wp_Post_Projects_Loader as all of the hooks are defined
-		 * in that particular class.
-		 *
-		 * The Wp_Post_Projects_Loader will then create the relationship
-		 * between the defined hooks and the functions defined in this
-		 * class.
-		 */
 
 		wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-post-projects-admin.js', array( 'jquery' ), $this->version, false );
 
@@ -114,17 +38,110 @@ class Wp_Post_Projects_Admin {
 	      'public' => true,
 	      'has_archive' => true,
 	      'menu_icon' => 'dashicons-category',
+	      'rewrite' => array( 'slug' => 'projects/%content_type%', 'with_front' => false ),
+	              'has_archive' => 'projects',
 	    )
 	  );
 	}
 
 
+	public function create_content_type_taxonomy() {
+		// Add new taxonomy, make it hierarchical (like categories)
+		$labels = array(
+			'name'              => _x( 'Post content types', 'taxonomy general name' ),
+			'singular_name'     => _x( 'Post content type', 'taxonomy singular name' ),
+			'search_items'      => __( 'Search Post content types' ),
+			'all_items'         => __( 'All Post content types' ),
+			'parent_item'       => __( 'Parent Post content type' ),
+			'parent_item_colon' => __( 'Parent Post content type:' ),
+			'edit_item'         => __( 'Edit Post content type' ),
+			'update_item'       => __( 'Update Post content type' ),
+			'add_new_item'      => __( 'Add New Post content type' ),
+			'new_item_name'     => __( 'New Post content type Name' ),
+			'menu_name'         => __( 'Post content types' ),
+		);
+
+		$args = array(
+			'hierarchical'      => true,
+			'labels'            => $labels,
+			'show_ui'           => true,
+			'show_admin_column' => true,
+			'query_var'         => true,
+			'rewrite' => array( 
+				'slug' => 'projects', 
+				'with_front' => false 
+			)
+		);
+
+		register_taxonomy( 'content_type', array( 'post' ), $args );
+	}
 
 
+	/*public function project_permalinks( $post_link, $post ){
+    if ( is_object( $post ) && $post->post_type == 'project' ){
+        $terms = wp_get_object_terms( $post->ID, 'content_type' );
+        if( $terms ){
+            return str_replace( '%content_type%' , $terms[0]->slug , $post_link );
+        }
+    }
+    return $post_link;
+	}*/
 
 
+	public function set_project_dates($project_id)
+	{
+		// If this isnt a project or is just a revision, don't do anything.
+		if ( wp_is_post_revision( $project_id ) || 'project' != get_post_type($project_id)  )
+			return;
+
+		$projects = Wp_Post_Projects_Public::get_project_posts($project_id);
+
+		$last_date = get_the_date('M Y', $projects->posts[0]);
+		$earliest_date = get_the_date('M Y', end($projects->posts));
+
+		update_post_meta($project_id, $this->plugin_name . '_start_date', $earliest_date);
+		update_post_meta($project_id, $this->plugin_name . '_end_date', $last_date);
+
+	}
 
 
+	/**
+	 * Detect embedded content on save_post and update content_type meta accordingly
+	 * @param [Int] $post_id [The ID of the post to update (passed in by save_post action)]
+	 */
+	public function set_post_content_type($post_id)
+	{
+
+		// If this is just a revision, don't do anything.
+		if ( wp_is_post_revision( $post_id ) )
+			return;
+
+		$post = get_post($post_id);
+		$content_type = wp_get_post_terms( $post_id, 'content_type');
+		
+		//Get the content, apply filters and execute shortcodes
+		$content = apply_filters( 'the_content', $post->post_content );
+		$embeds = get_media_embedded_in_content( $content );
+
+		if( !empty($embeds) ) {
+      //check what is the first embed containg video tag, youtube or vimeo
+      foreach( $embeds as $embed ) {
+        if( strpos( $embed, 'video' ) || strpos( $embed, 'youtube' ) || strpos( $embed, 'vimeo' ) ) {
+          return wp_set_post_terms( $post_id, 242, 'content_type');
+        }
+        elseif( strpos( $embed, 'audio' ) || strpos( $embed, 'soundcloud' ) ) {
+          return wp_set_post_terms( $post_id, 245, 'content_type');
+        }
+        else{
+        	return false;
+        }
+      }
+		} else {
+      //No embeds found
+      return false;
+    }
+
+	}
 
 
 
@@ -137,7 +154,7 @@ class Wp_Post_Projects_Admin {
 	        'cb' => '<input type="checkbox" />',
 	        'title' => __('Title'),
 	        'project' => __('Project'),
-	        'post_format' =>__( 'Post Format'),
+	        'content_type' =>__( 'Content Type'),
 	        'tags' =>__( 'Tags'),
 	        'date' => __('Date')
 	    );
@@ -156,8 +173,11 @@ class Wp_Post_Projects_Admin {
 	      }
 	      break;
 
-	    case 'post_format':
-	      echo get_post_format( $post_id ); 
+	    case 'content_type':
+	    	$terms = wp_get_post_terms( $post_id, 'content_type' ); 
+	    	if(!empty($terms)){
+	      	echo $terms[0]->name; 
+	      }
 	      break;
 	  }
 	}
