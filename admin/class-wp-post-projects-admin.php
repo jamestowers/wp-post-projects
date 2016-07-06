@@ -38,27 +38,27 @@ class Wp_Post_Projects_Admin {
 	      'public' => true,
 	      'has_archive' => true,
 	      'menu_icon' => 'dashicons-category',
-	      'rewrite' => array( 'slug' => 'projects/%content_type%', 'with_front' => false ),
+	      'rewrite' => array( 'slug' => 'projects/%directory%', 'with_front' => false ),
 	              'has_archive' => 'projects',
 	    )
 	  );
 	}
 
 
-	public function create_content_type_taxonomy() {
+	public function create_directory_taxonomy() {
 		// Add new taxonomy, make it hierarchical (like categories)
 		$labels = array(
-			'name'              => _x( 'Post content types', 'taxonomy general name' ),
-			'singular_name'     => _x( 'Post content type', 'taxonomy singular name' ),
-			'search_items'      => __( 'Search Post content types' ),
-			'all_items'         => __( 'All Post content types' ),
-			'parent_item'       => __( 'Parent Post content type' ),
-			'parent_item_colon' => __( 'Parent Post content type:' ),
-			'edit_item'         => __( 'Edit Post content type' ),
-			'update_item'       => __( 'Update Post content type' ),
-			'add_new_item'      => __( 'Add New Post content type' ),
-			'new_item_name'     => __( 'New Post content type Name' ),
-			'menu_name'         => __( 'Post content types' ),
+			'name'              => _x( 'Post directories', 'taxonomy general name' ),
+			'singular_name'     => _x( 'Post directory', 'taxonomy singular name' ),
+			'search_items'      => __( 'Search Post directories' ),
+			'all_items'         => __( 'All Post directories' ),
+			'parent_item'       => __( 'Parent Post directory' ),
+			'parent_item_colon' => __( 'Parent Post directory:' ),
+			'edit_item'         => __( 'Edit Post directory' ),
+			'update_item'       => __( 'Update Post directory' ),
+			'add_new_item'      => __( 'Add New Post directory' ),
+			'new_item_name'     => __( 'New Post directory Name' ),
+			'menu_name'         => __( 'Post directories' ),
 		);
 
 		$args = array(
@@ -73,15 +73,15 @@ class Wp_Post_Projects_Admin {
 			)
 		);
 
-		register_taxonomy( 'content_type', array( 'post' ), $args );
+		register_taxonomy( 'directory', array( 'post' ), $args );
 	}
 
 
 	/*public function project_permalinks( $post_link, $post ){
     if ( is_object( $post ) && $post->post_type == 'project' ){
-        $terms = wp_get_object_terms( $post->ID, 'content_type' );
+        $terms = wp_get_object_terms( $post->ID, 'directory' );
         if( $terms ){
-            return str_replace( '%content_type%' , $terms[0]->slug , $post_link );
+            return str_replace( '%directory%' , $terms[0]->slug , $post_link );
         }
     }
     return $post_link;
@@ -106,10 +106,10 @@ class Wp_Post_Projects_Admin {
 
 
 	/**
-	 * Detect embedded content on save_post and update content_type meta accordingly
+	 * Detect embedded content on save_post and update directory meta accordingly
 	 * @param [Int] $post_id [The ID of the post to update (passed in by save_post action)]
 	 */
-	public function set_post_content_type($post_id)
+	public function set_post_directory($post_id)
 	{
 
 		// If this is just a revision, don't do anything.
@@ -117,7 +117,7 @@ class Wp_Post_Projects_Admin {
 			return;
 
 		$post = get_post($post_id);
-		$content_type = wp_get_post_terms( $post_id, 'content_type');
+		$directory = wp_get_post_terms( $post_id, 'directory');
 		
 		//Get the content, apply filters and execute shortcodes
 		$content = apply_filters( 'the_content', $post->post_content );
@@ -127,10 +127,10 @@ class Wp_Post_Projects_Admin {
       //check what is the first embed containg video tag, youtube or vimeo
       foreach( $embeds as $embed ) {
         if( strpos( $embed, 'video' ) || strpos( $embed, 'youtube' ) || strpos( $embed, 'vimeo' ) ) {
-          return wp_set_post_terms( $post_id, 242, 'content_type');
+          return wp_set_post_terms( $post_id, 242, 'directory');
         }
         elseif( strpos( $embed, 'audio' ) || strpos( $embed, 'soundcloud' ) ) {
-          return wp_set_post_terms( $post_id, 245, 'content_type');
+          return wp_set_post_terms( $post_id, 245, 'directory');
         }
         else{
         	return false;
@@ -146,7 +146,7 @@ class Wp_Post_Projects_Admin {
 
 
 	/**
-	 * Add project and content type columns to post write panel
+	 * Add project and directory columns to post write panel
 	 * @param see: https://codex.wordpress.org/Plugin_API/Action_Reference/manage_posts_custom_column
 	 */
 	function set_post_columns($columns) {
@@ -154,14 +154,14 @@ class Wp_Post_Projects_Admin {
 	        'cb' => '<input type="checkbox" />',
 	        'title' => __('Title'),
 	        'project' => __('Project'),
-	        'content_type' =>__( 'Content Type'),
+	        'directory' =>__( 'Content Type'),
 	        'tags' =>__( 'Tags'),
 	        'date' => __('Date')
 	    );
 	}
 
 	/**
-	 * Populate project and content type custom columns
+	 * Populate project and directory custom columns
 	 * @param see: https://codex.wordpress.org/Plugin_API/Action_Reference/manage_posts_custom_column
 	 */
 	public function populate_custom_columns( $column, $post_id ) {
@@ -173,8 +173,8 @@ class Wp_Post_Projects_Admin {
 	      }
 	      break;
 
-	    case 'content_type':
-	    	$terms = wp_get_post_terms( $post_id, 'content_type' ); 
+	    case 'directory':
+	    	$terms = wp_get_post_terms( $post_id, 'directory' ); 
 	    	if(!empty($terms)){
 	      	echo $terms[0]->name; 
 	      }

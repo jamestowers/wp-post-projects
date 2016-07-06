@@ -81,17 +81,17 @@ class Wp_Post_Projects {
 		$plugin_meta_boxes = new Wp_Post_Projects_Meta_Boxes( $this->get_plugin_name(), $this->get_version() );
 
 		$this->loader->add_action( 'init', $plugin_admin, 'create_project_post_type' );
-		$this->loader->add_action( 'init', $plugin_admin, 'create_content_type_taxonomy' );
+		$this->loader->add_action( 'init', $plugin_admin, 'create_directory_taxonomy' );
 		$this->loader->add_filter( 'manage_post_posts_columns', $plugin_admin, 'set_post_columns' );
 		//$this->loader->add_filter( 'post_type_link', $plugin_admin, 'project_permalinks', 1, 2 );
 		$this->loader->add_action( 'manage_posts_custom_column', $plugin_admin, 'populate_custom_columns', 10, 2 );
-		$this->loader->add_action( 'save_post', $plugin_admin, 'set_post_content_type' );
+		$this->loader->add_action( 'save_post', $plugin_admin, 'set_post_directory' );
 		$this->loader->add_action( 'save_post', $plugin_admin, 'set_project_dates' );
 
 
 		/* Fire the project meta box setup function on the post editor screen. */
 		//-- Remove default content type meta box
-		$this->loader->add_action( 'admin_menu', $plugin_meta_boxes, 'remove_default_post_content_type_meta_box' );
+		$this->loader->add_action( 'admin_menu', $plugin_meta_boxes, 'remove_default_post_directory_meta_box' );
 		//-- add new ones
 		$this->loader->add_action( 'load-post.php', $plugin_meta_boxes, 'post_meta_boxes_setup' );
 		$this->loader->add_action( 'load-post-new.php', $plugin_meta_boxes, 'post_meta_boxes_setup' );

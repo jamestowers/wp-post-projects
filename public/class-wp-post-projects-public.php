@@ -53,7 +53,7 @@ class Wp_Post_Projects_Public {
 
 
 
-	public static function sort_project_posts_by_content_type($project_id)
+	public static function sort_project_posts_by_directory($project_id)
 	{
 		
 		$query = self::get_project_posts($project_id);
@@ -62,31 +62,31 @@ class Wp_Post_Projects_Public {
 
 		if ($query->have_posts()) : while ($query->have_posts()) : $query->the_post();
 			
-			$content_type = wp_get_post_terms( $query->post->ID, 'content_type' );
+			$directory = wp_get_post_terms( $query->post->ID, 'directory' );
 
 			// Skip if this post doesnt have a content type
-			if(!empty($content_type)){
+			if(!empty($directory)){
 
 				// Only one content type is allowed per post so just get the first one
-				$content_type = $content_type[0]; 
+				$directory = $directory[0]; 
 				
 				// If this project has post of this content type
-				if( $content_type->count > 0 ){
+				if( $directory->count > 0 ){
 
-					if(!isset($sorted_posts[$content_type->slug])){
-						$sorted_posts[$content_type->slug] = array();
+					if(!isset($sorted_posts[$directory->slug])){
+						$sorted_posts[$directory->slug] = array();
 					}
 
 					$thumb_url = has_post_thumbnail() ? get_the_post_thumbnail( $query->post->ID, 'post-thumbnail' ) : '';
 					
 					$p = array(
 						'title' => get_the_title(),
-						'content_type' => $content_type->name,
+						'directory' => $directory->name,
 						'content' => get_the_content(),
 						'thumbnail' => $thumb_url
 					);
 					
-					array_push($sorted_posts[$content_type->slug], $p);
+					array_push($sorted_posts[$directory->slug], $p);
 				}
 
 			}
@@ -111,19 +111,19 @@ class Wp_Post_Projects_Public {
 			$project_id = $post->ID;
 		}
 
-	  $posts = $this->sort_project_posts_by_content_type($project_id);
+	  $posts = $this->sort_project_posts_by_directory($project_id);
 
-	  foreach($posts as $content_type => $posts){
+	  foreach($posts as $directory => $posts){
 	  	if(!empty($posts)){
 	  		$post = $posts[0];
-	  		$link = add_query_arg( 'project_id', $project_id, get_term_link($content_type, 'content_type'));
+	  		$link = add_query_arg( 'project_id', $project_id, get_term_link($directory, 'directory'));
 	  		?>
 
-	  		<a href="<?php echo esc_attr($link);?>" class="tile post-content-type post-content-type-<?php echo $content_type;?>">
+	  		<a href="<?php echo esc_attr($link);?>" class="tile post-content-type post-content-type-<?php echo $directory;?>">
 	  			<figure class="thumbnail">
 	  				<?php echo $post['thumbnail'];?>
 	  			</figure>
-	  			<h3><?php  echo $post['content_type'];?></h3>
+	  			<h3><?php  echo $post['directory'];?></h3>
 	  		</a>
 
 	  	<?php }
@@ -160,7 +160,7 @@ class Wp_Post_Projects_Public {
 	public function add_shortcodes()
 	{
 		//add_shortcode('project_posts', array( &$this, 'render_project_posts'));
-		//add_shortcode('project_posts_by_format', array( &$this, 'sort_project_posts_by_content_type'));
+		//add_shortcode('project_posts_by_format', array( &$this, 'sort_project_posts_by_directory'));
 	}
 
 }

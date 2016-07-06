@@ -54,7 +54,7 @@ class Wp_Post_Projects_Meta_Boxes {
   {
     /* Add meta boxes on the 'add_meta_boxes' hook. */
     add_action( 'add_meta_boxes', array( &$this, 'add_project_meta_boxes') );
-    add_action( 'add_meta_boxes', array( &$this, 'add_post_content_type_meta_boxes') );
+    add_action( 'add_meta_boxes', array( &$this, 'add_post_directory_meta_boxes') );
     /* Save post meta on the 'save_post' hook. */
     add_action( 'save_post', array( &$this, 'save_post_project'), 10, 2 );
   }
@@ -72,21 +72,21 @@ class Wp_Post_Projects_Meta_Boxes {
   }
 
 
-  // remove default content_type taxonomy meta box 
+  // remove default directory taxonomy meta box 
   // so that we can add our oen in its place
-  public function remove_default_post_content_type_meta_box()
+  public function remove_default_post_directory_meta_box()
   {
-    remove_meta_box('content_typediv', 'post', 'side');
+    remove_meta_box('directorydiv', 'post', 'side');
   }
 
   // Add our own...
-  public function add_post_content_type_meta_boxes()
+  public function add_post_directory_meta_boxes()
   {
     
     add_meta_box( 
-      $this->plugin_name . '_content_type_meta_box', 
+      $this->plugin_name . '_directory_meta_box', 
       esc_html__( 'Content Type', $this->plugin_name ), 
-      array( &$this, 'render_content_type_metabox'),
+      array( &$this, 'render_directory_metabox'),
       'post',
       'side',
       'core'
@@ -119,10 +119,10 @@ class Wp_Post_Projects_Meta_Boxes {
   <?php }
 
 
-  public function render_content_type_metabox( $post, $box )
+  public function render_directory_metabox( $post, $box )
   {
     //Get taxonomy and terms
-    $taxonomy = 'content_type';
+    $taxonomy = 'directory';
  
     //Set up the taxonomy object and get terms
     $tax = get_taxonomy($taxonomy);
