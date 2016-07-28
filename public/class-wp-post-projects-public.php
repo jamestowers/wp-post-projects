@@ -18,7 +18,7 @@ class Wp_Post_Projects_Public {
 	 */
 	public function enqueue_styles() {
 
-		wp_enqueue_style( self::$plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-post-projects-public.css', array(), $this->version, 'all' );
+		wp_enqueue_style( $this->$plugin_name, plugin_dir_url( __FILE__ ) . 'css/wp-post-projects-public.css', array(), $this->version, 'all' );
 
 	}
 
@@ -27,11 +27,15 @@ class Wp_Post_Projects_Public {
 	 */
 	public function enqueue_scripts() {
 
-		wp_enqueue_script( self::$plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-post-projects-public.js', array( 'jquery' ), $this->version, false );
+		wp_enqueue_script( $this->$plugin_name, plugin_dir_url( __FILE__ ) . 'js/wp-post-projects-public.js', array( 'jquery' ), $this->version, false );
 
 	}
 
-
+	/**
+	 * Get all posts in a project
+	 * @param  [Int] $project_id [Project ID]
+	 * @return [Array] [WP_QUERY]
+	 */
 	public static function get_project_posts($project_id)
 	{
 	  $args = array(
@@ -51,11 +55,76 @@ class Wp_Post_Projects_Public {
 	  return $query;
 	}
 
+	public static function get_project_posts_in_directory($project_id, $directory_slug)
+	{
+		$args = array(
+		  'meta_query' => array(
+		      array(
+		        'key'     => self::$plugin_name . '_project',
+		        'value'   => $project_id,
+		        //'compare' => 'IN',
+		      ),
+		    ),
+		  'tax_query' => array(
+		      array(
+		        'taxonomy' => 'directory',
+		        'field'    => 'slug',
+		        'terms'    => $directory_slug,
+		      ),
+		    ),
+		);
+
+		$directory_query = new WP_Query($args);
+		return $directory_query;
+	}
 
 
+	public static function get_directories()
+	{
+		global $post;
+		// Make sure the post has directories
+		/*if(!self::post_has_project($post->ID))
+			return;*/
+
+		$directories = get_terms( array(
+		    'taxonomy' => 'directory',
+		    'hide_empty' => false,
+		) );
+
+		return $directories;
+	}
+
+	public static function directory_links()
+	{
+		//$project_id = isset($_GET['project_id']) ? $_GET['project_id'] : null;
+
+	  $directories = self::get_directories();
+
+	  echo '<div class="tabs"><ul>';
+	  foreach($directories as $directory)
+	  {
+	  	//$url = get_term_link($directory);
+	  	$url = get_the_permalink();
+	  	$url = add_query_arg('type', $directory->slug, $url);
+	  	$active = (isset($_GET['type']) && $_GET['type'] === $directory->slug) ? 'active' : '';
+	  	/*if($project_id){
+	  		$url = add_query_arg('project_id', $project_id, $url);
+	  	}
+	  	$active = is_tax('directory', $directory->name) ? 'active' : '';*/
+	    echo '<li class="' . $active . '"><a href="' . $url . '">' . $directory->name . '</a></li>';
+	  }
+	  echo '</ul></div>';
+	}
+
+
+
+	/**
+	 * Order the post in a project by directory name
+	 * @param  [Int] $project_id [Project ID]
+	 * @return [Array] [Associative array of directories]
+	 */
 	public static function sort_project_posts_by_directory($project_id)
 	{
-		
 		$query = self::get_project_posts($project_id);
 
 		$sorted_posts = array();
@@ -74,19 +143,16 @@ class Wp_Post_Projects_Public {
 				if( $directory->count > 0 ){
 
 					if(!isset($sorted_posts[$directory->slug])){
-						$sorted_posts[$directory->slug] = array();
+						$sorted_posts[$directory->slug] = array(
+							'id' => $directory->ID,
+							'title' => $directory->name,
+							'slug' => $directory->slug,
+							'thumbnail' => has_post_thumbnail() ? get_the_post_thumbnail( $query->post->ID, 'post-thumbnail' ) : '',
+							'posts' => array()
+							);
 					}
-
-					$thumb_url = has_post_thumbnail() ? get_the_post_thumbnail( $query->post->ID, 'post-thumbnail' ) : '';
 					
-					$p = array(
-						'title' => get_the_title(),
-						'directory' => $directory->name,
-						'content' => get_the_content(),
-						'thumbnail' => $thumb_url
-					);
-					
-					array_push($sorted_posts[$directory->slug], $p);
+					array_push($sorted_posts[$directory->slug]['posts'], $query->post);
 				}
 
 			}
@@ -98,39 +164,25 @@ class Wp_Post_Projects_Public {
 	}
 
 
+	/**
+	 * Get the start and end date of a project by taking
+	 * @param  [Int] $project_id [The projecvt ID]
+	 * @return [String]
+	 */
 	public static function get_project_date_range($project_id)
 	{
 		return get_post_meta($project_id, 'wp-post-projects_start_date', true) . ' - ' . get_post_meta($project_id, 'wp-post-projects_end_date', true);
 	}
 	
 
-	/*public function render_project_posts($project_id)
-	{
-		if(null == $project_id){
-			global $post;
-			$project_id = $post->ID;
-		}
 
-	  $posts = $this->sort_project_posts_by_directory($project_id);
-
-	  foreach($posts as $directory => $posts){
-	  	if(!empty($posts)){
-	  		$post = $posts[0];
-	  		$link = add_query_arg( 'project_id', $project_id, get_term_link($directory, 'directory'));
-	  		?>
-
-	  		<a href="<?php echo esc_attr($link);?>" class="tile post-content-type post-content-type-<?php echo $directory;?>">
-	  			<figure class="thumbnail">
-	  				<?php echo $post['thumbnail'];?>
-	  			</figure>
-	  			<h3><?php  echo $post['directory'];?></h3>
-	  		</a>
-
-	  	<?php }
-	  }
-	}*/
-
-
+	/**
+	 * If on a directory taxonomy page and project_id query param 
+	 * is valid then display only the post in that directory and from that project
+	 * (Prepends data ot thew query on the taxonomy page)
+	 * @param  [Array] $query [qwuery passed in from pre_get_posts action]
+	 * @return [wp_query]
+	 */
 	public function filter_project_taxonomy_archive ( $query ) {
 
 	  if ( $query->is_main_query() && is_tax('projects') )
@@ -141,7 +193,7 @@ class Wp_Post_Projects_Public {
 
 	      $query->set( 'meta_query', array(
 	        array(
-	          'key' => 'wp-post-projects_project',
+	          'key' => self::$plugin_name . '_project',
 	          'value' => $_REQUEST['project_id'],
 	          'compare' => '=',
 	          'type' => 'numeric'
@@ -150,6 +202,28 @@ class Wp_Post_Projects_Public {
 	      );
 
 	    }
+	}
+
+	public static function post_has_project($post_id)
+	{
+		return get_post_meta($post_id, self::$plugin_name . '_project', true);
+	}
+
+	public static function post_project_link()
+	{
+		global $post;
+		if(isset($_GET['type'])){
+			$project_id = $post->ID;
+		}else{
+			$project_id = self::post_has_project($post->ID);
+			if(!$project_id)
+				return false;
+		}
+
+		$project = get_post($project_id);
+		//log_it($project);
+		return '<a href="' . get_the_permalink($project->ID) . '">Back to ' . $project->post_title . ' main page</a>';
+
 	}
 
 
@@ -165,6 +239,12 @@ class Wp_Post_Projects_Public {
 
 }
 
+
+/**
+ * Static function to display the projects date range
+ * @param  [Int] $project_id [The project ID]
+ * @return [Method] [Method from above class]
+ */
 function project_date_range($project_id = null)
 {
 	if(null == $project_id){

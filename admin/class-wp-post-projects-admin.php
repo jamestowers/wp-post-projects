@@ -36,10 +36,12 @@ class Wp_Post_Projects_Admin {
 	        'singular_name' => __( 'Project' )
 	      ),
 	      'public' => true,
-	      'has_archive' => true,
 	      'menu_icon' => 'dashicons-category',
-	      'rewrite' => array( 'slug' => 'projects/%directory%', 'with_front' => false ),
-	              'has_archive' => 'projects',
+	      'rewrite' => array( 
+	      	'slug' => 'projects', 
+	      	'with_front' => false 
+	      ),
+	      'has_archive' => 'projects',
 	    )
 	  );
 	}
@@ -69,7 +71,7 @@ class Wp_Post_Projects_Admin {
 			'query_var'         => true,
 			'rewrite' => array( 
 				'slug' => 'projects', 
-				'with_front' => false 
+				'with_front' => true 
 			)
 		);
 
@@ -77,30 +79,46 @@ class Wp_Post_Projects_Admin {
 	}
 
 
-	/*public function project_permalinks( $post_link, $post ){
-    if ( is_object( $post ) && $post->post_type == 'project' ){
-        $terms = wp_get_object_terms( $post->ID, 'directory' );
-        if( $terms ){
-            return str_replace( '%directory%' , $terms[0]->slug , $post_link );
-        }
-    }
-    return $post_link;
-	}*/
-
-
-	public function set_project_dates($project_id)
+	public function set_project_dates($post_id)
 	{
-		// If this isnt a project or is just a revision, don't do anything.
-		if ( wp_is_post_revision( $project_id ) || 'project' != get_post_type($project_id)  )
+		// If this is just a revision, don't do anything.
+		if ( wp_is_post_revision( $post_id ) )
 			return;
+
+		// Get post type
+		$post_type = get_post_type($post_id);
+
+		// retun if the post isnt a post or project
+		if( !in_array($post_type, ['project', 'post']))
+			return;
+
+		// If its a post then get the parent project id if it has one, return if not
+		if('post' == $post_type){
+			$project_id = Wp_Post_Projects_Public::post_has_project($post_id);
+			if(!$project_id)
+				return;
+		}
+		else{
+			$project_id = $post_id;
+		}
 
 		$projects = Wp_Post_Projects_Public::get_project_posts($project_id);
 
 		$last_date = get_the_date('M Y', $projects->posts[0]);
 		$earliest_date = get_the_date('M Y', end($projects->posts));
 
+		foreach($projects->posts as $project){
+			log_it($project->post_date);
+		}
+
+		$d1 = new DateTime($earliest_date);
+		$d2 = new DateTime($last_date);
+		$interval = date_diff($d1, $d2);
+		$duration_in_months = $interval->m + 12*$interval->y;
+		
 		update_post_meta($project_id, $this->plugin_name . '_start_date', $earliest_date);
 		update_post_meta($project_id, $this->plugin_name . '_end_date', $last_date);
+		update_post_meta($project_id, $this->plugin_name . '_duration_in_months', $duration_in_months);
 
 	}
 
@@ -127,10 +145,10 @@ class Wp_Post_Projects_Admin {
       //check what is the first embed containg video tag, youtube or vimeo
       foreach( $embeds as $embed ) {
         if( strpos( $embed, 'video' ) || strpos( $embed, 'youtube' ) || strpos( $embed, 'vimeo' ) ) {
-          return wp_set_post_terms( $post_id, 242, 'directory');
+          return wp_set_post_terms( $post_id, 2, 'directory');
         }
         elseif( strpos( $embed, 'audio' ) || strpos( $embed, 'soundcloud' ) ) {
-          return wp_set_post_terms( $post_id, 245, 'directory');
+          return wp_set_post_terms( $post_id, 4, 'directory');
         }
         else{
         	return false;

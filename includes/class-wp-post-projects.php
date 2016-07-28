@@ -83,7 +83,8 @@ class Wp_Post_Projects {
 		$this->loader->add_action( 'init', $plugin_admin, 'create_project_post_type' );
 		$this->loader->add_action( 'init', $plugin_admin, 'create_directory_taxonomy' );
 		$this->loader->add_filter( 'manage_post_posts_columns', $plugin_admin, 'set_post_columns' );
-		//$this->loader->add_filter( 'post_type_link', $plugin_admin, 'project_permalinks', 1, 2 );
+		//$this->loader->add_filter( 'post_type_link', $plugin_admin, 'project_permalinks', 1, 4 );
+
 		$this->loader->add_action( 'manage_posts_custom_column', $plugin_admin, 'populate_custom_columns', 10, 2 );
 		$this->loader->add_action( 'save_post', $plugin_admin, 'set_post_directory' );
 		$this->loader->add_action( 'save_post', $plugin_admin, 'set_project_dates' );
