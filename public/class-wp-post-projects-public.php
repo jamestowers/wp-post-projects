@@ -171,7 +171,9 @@ class Wp_Post_Projects_Public {
 	 */
 	public static function get_project_date_range($project_id)
 	{
-		return get_post_meta($project_id, 'wp-post-projects_start_date', true) . ' - ' . get_post_meta($project_id, 'wp-post-projects_end_date', true);
+		$start = get_post_meta($project_id, 'wp-post-projects_start_date', true);
+		$end = get_post_meta($project_id, 'wp-post-projects_end_date', true);
+		return date("M Y", strtotime($start)) . ' - ' . date("M Y", strtotime($end));
 	}
 	
 
@@ -221,7 +223,6 @@ class Wp_Post_Projects_Public {
 		}
 
 		$project = get_post($project_id);
-		//log_it($project);
 		return '<a href="' . get_the_permalink($project->ID) . '">Back to ' . $project->post_title . ' main page</a>';
 
 	}

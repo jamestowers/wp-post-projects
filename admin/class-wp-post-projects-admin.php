@@ -104,18 +104,24 @@ class Wp_Post_Projects_Admin {
 
 		$projects = Wp_Post_Projects_Public::get_project_posts($project_id);
 
-		$last_date = get_the_date('M Y', $projects->posts[0]);
-		$earliest_date = get_the_date('M Y', end($projects->posts));
-
-		foreach($projects->posts as $project){
-			log_it($project->post_date);
-		}
+		$last_date = $projects->posts[0]->post_date;//get_the_date('M Y', $projects->posts[0]);
+		$earliest_date = end($projects->posts)->post_date;//get_the_date('M Y', end($projects->posts));
 
 		$d1 = new DateTime($earliest_date);
 		$d2 = new DateTime($last_date);
 		$interval = date_diff($d1, $d2);
 		$duration_in_months = $interval->m + 12*$interval->y;
 		
+		log_it($project_id);
+
+		if('project' == $post_type){
+			remove_action('save_post', array( $this, 'set_project_dates' ));
+			wp_update_post([
+				'ID'        => $project_id,
+				'post_date' => $earliest_date
+				]);
+			add_action('save_post', array( $this, 'set_project_dates' ));
+		}
 		update_post_meta($project_id, $this->plugin_name . '_start_date', $earliest_date);
 		update_post_meta($project_id, $this->plugin_name . '_end_date', $last_date);
 		update_post_meta($project_id, $this->plugin_name . '_duration_in_months', $duration_in_months);
