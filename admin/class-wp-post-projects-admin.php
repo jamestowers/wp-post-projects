@@ -34,7 +34,13 @@ class Wp_Post_Projects_Admin {
 	    array(
 	      'labels' => array(
 	        'name' => __( 'Projects' ),
-	        'singular_name' => __( 'Project' )
+	        'singular_name' => __( 'Project' ),
+	        'add_new' => __( 'Add New Project' ),
+		      'add_new_item' => __( 'Add New Project' ),
+		      'edit_item' => 'Edit Project',
+		      'featured_image' => __( 'Project Cover' ),
+		      'use_featured_image' => __( 'Use as Project cover' ),
+		      'archives' => __( 'Project archives' )
 	      ),
 	      'public' => true,
 	      'menu_icon' => 'dashicons-category',
