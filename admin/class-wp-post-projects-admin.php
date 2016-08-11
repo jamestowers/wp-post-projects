@@ -4,6 +4,7 @@ class Wp_Post_Projects_Admin {
 
 	private $plugin_name;
 	private $version;
+	private $directory_child_post_types = array('post', 'album');
 
 	public function __construct( $plugin_name, $version ) {
 
@@ -75,7 +76,7 @@ class Wp_Post_Projects_Admin {
 			)
 		);
 
-		register_taxonomy( 'directory', array( 'post' ), $args );
+		register_taxonomy( 'directory', array( 'post', 'album' ), $args );
 	}
 
 
@@ -89,11 +90,11 @@ class Wp_Post_Projects_Admin {
 		$post_type = get_post_type($post_id);
 
 		// retun if the post isnt a post or project
-		if( !in_array($post_type, ['project', 'post']))
+		if( !in_array($post_type, $this->directory_child_post_types + ['project'] ))
 			return;
 
 		// If its a post then get the parent project id if it has one, return if not
-		if('post' == $post_type){
+		if(in_array($post_type, $this->directory_child_post_types)){
 			$project_id = Wp_Post_Projects_Public::post_has_project($post_id);
 			if(!$project_id)
 				return;
@@ -112,7 +113,6 @@ class Wp_Post_Projects_Admin {
 		$interval = date_diff($d1, $d2);
 		$duration_in_months = $interval->m + 12*$interval->y;
 		
-		log_it($project_id);
 
 		if('project' == $post_type){
 			remove_action('save_post', array( $this, 'set_project_dates' ));

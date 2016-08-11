@@ -19,6 +19,9 @@ class Wp_Post_Projects_Meta_Boxes {
    */
   private $version;
 
+
+  private $directory_child_post_types = array('post', 'album');
+
   /**
    * Initialize the class and set its properties.
    *
@@ -59,16 +62,18 @@ class Wp_Post_Projects_Meta_Boxes {
     add_action( 'save_post', array( &$this, 'save_post_project'), 10, 2 );
   }
 
-  public function add_project_meta_boxes()
+  public function add_project_meta_boxes($postType)
   {
-    add_meta_box(
-      $this->plugin_name . '_project_meta_box',      // Unique ID
-      esc_html__( 'Project', $this->plugin_name ),    // Title
-      array( &$this, 'render_project_info_meta_box'),   // Callback function
-      'post',         // Admin page (or post type)
-      'side',         // Context
-      'default'       // Priority
-    );
+    if(in_array($postType, $this->directory_child_post_types)){
+      add_meta_box(
+        $this->plugin_name . '_project_meta_box',      // Unique ID
+        esc_html__( 'Project', $this->plugin_name ),    // Title
+        array( &$this, 'render_project_info_meta_box'),   // Callback function
+        $postType,         // Admin page (or post type)
+        'side',         // Context
+        'default'       // Priority
+      );
+    }
   }
 
 

@@ -39,7 +39,7 @@ class Wp_Post_Projects_Public {
 	public static function get_project_posts($project_id)
 	{
 	  $args = array(
-	    'post_type' => 'post',
+	    'post_type' => array('post', 'album'),
 	    'meta_query' => array(
 	      array(
 	        'key' => self::$plugin_name . '_project',
@@ -58,6 +58,7 @@ class Wp_Post_Projects_Public {
 	public static function get_project_posts_in_directory($project_id, $directory_slug)
 	{
 		$args = array(
+			'post_type' => array( 'post', 'album' ),
 		  'meta_query' => array(
 		      array(
 		        'key'     => self::$plugin_name . '_project',
@@ -71,7 +72,7 @@ class Wp_Post_Projects_Public {
 		        'field'    => 'slug',
 		        'terms'    => $directory_slug,
 		      ),
-		    ),
+		    )
 		);
 
 		$directory_query = new WP_Query($args);
@@ -223,7 +224,7 @@ class Wp_Post_Projects_Public {
 		}
 
 		$project = get_post($project_id);
-		return '<a href="' . get_the_permalink($project->ID) . '">Back to ' . $project->post_title . ' main page</a>';
+		return '<a href="' . get_the_permalink($project->ID) . '" class="directory-up">Back to ' . $project->post_title . ' main page</a>';
 
 	}
 
