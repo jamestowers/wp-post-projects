@@ -120,6 +120,8 @@ class Wp_Post_Projects_Meta_Boxes {
           echo '<option value="' . $project->ID . '" ' . $selected . '>' . $project->post_title . '</option>';
         }?>
       </select>
+
+      <a href="<?php echo get_settings('siteurl');?>/wp-admin/post-new.php?post_type=project">Add new project</a>
     
   <?php }
 
