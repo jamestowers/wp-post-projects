@@ -77,7 +77,7 @@ class Wp_Post_Projects_Admin {
 			'show_admin_column' => true,
 			'query_var'         => true,
 			'rewrite' => array( 
-				'slug' => 'projects', 
+				'slug' => 'directory', 
 				'with_front' => true 
 			)
 		);
