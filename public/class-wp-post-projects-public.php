@@ -228,6 +228,37 @@ class Wp_Post_Projects_Public {
 
 	}
 
+	public static function breadcrumb()
+	{
+		global $post;
+		$levels = array();
+
+		if($post->post_type == 'project' && !isset($_GET['type']))
+			return;
+
+		if(is_single()){
+			$directories = wp_get_post_terms( $post->ID, 'directory');
+			$project_id = self::post_has_project($post->ID);
+			$project = get_post($project_id);
+
+			if($directories[0]){
+				array_push($levels, array('title' => $directories[0]->name, 'url' => get_permalink($project_id) . '?type=' . $directories[0]->slug));
+			}
+			
+			array_push($levels, array('title' => $project->post_title, 'url' => get_permalink($project->ID)));
+		}
+
+		/*if(isset($_GET['type'])) {
+			$project_id = self::post_has_project($post->ID);
+			$project = get_post($project);
+			array_push($levels, array('title' => $project->post_title, 'url' => ''));
+		}else{
+
+		}*/
+
+		return $levels;
+	}
+
 
 	/**
 	 * Enable shortcode
