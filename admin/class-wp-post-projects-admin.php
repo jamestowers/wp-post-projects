@@ -49,6 +49,7 @@ class Wp_Post_Projects_Admin {
 	      	'with_front' => false 
 	      ),
 	      'has_archive' => 'projects',
+	      'supports' => array( 'title', 'editor', 'thumbnail' )
 	    )
 	  );
 	}
